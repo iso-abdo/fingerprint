@@ -29,7 +29,7 @@ function Index() {
         {/* 2. التعديل: تحويل الصندوق ليكون بكامل عرض الصفحة w-full وإزالة الحواف الدائرية الكبيرة لتلتصق بالشاشة */}
         <section 
           className="relative flex flex-col justify-end items-center w-full min-h-[600px] bg-contain bg-no-repeat bg-center shadow-md border-y border-border/15 pb-12"
-          style={{ backgroundImage: "url('/hero-bg.JPG')" }}
+          style={{ backgroundImage: "url('/hero-bg.png')" }}
         >
           
           {/* المحتوى الداخلي (الزر مستقر أسفل المنتصف تماماً) */}

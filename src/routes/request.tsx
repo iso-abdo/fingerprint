@@ -121,7 +121,7 @@ function RequestPage() {
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/40">
       <header className="border-b border-border/60 bg-card/80 backdrop-blur">
         <div className="mx-auto max-w-4xl px-6 py-4 flex items-center justify-between">
-          <Link to="/" className="font-bold">منصة الفحوصات الوقائية</Link>
+          <Link to="/" className="font-bold">منصـة بصـمـة ابتكـار</Link>
           <div className="flex items-center gap-2 text-sm">
             {[1, 2, 3].map((s) => (
               <div key={s} className={`h-8 w-8 rounded-full grid place-items-center font-semibold ${step >= s ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>{s}</div>

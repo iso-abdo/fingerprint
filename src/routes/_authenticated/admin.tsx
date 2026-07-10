@@ -6,7 +6,7 @@ import * as XLSX from "xlsx";
 import { toast } from "sonner";
 import { listRequests, listAllTests, uploadTests, deleteRequest } from "@/lib/admin.functions";
 import { supabase } from "@/integrations/supabase/client";
-import { Download, Upload, LogOut, Search, Trash2, RefreshCw, FileSpreadsheet } from "lucide-react";
+import { Download, Upload, LogOut, Search, Trash2, RefreshCw, FileSpreadsheet, Plus, Edit2, X, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "لوحة إدارة الطلبات" }] }),
@@ -18,6 +18,14 @@ function AdminPage() {
   const qc = useQueryClient();
   const [tab, setTab] = useState<"requests" | "tests">("requests");
   const [search, setSearch] = useState("");
+  const [testSearch, setTestSearch] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingTest, setEditingTest] = useState<any>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [testForm, setTestForm] = useState({
+    code: "", name_ar: "", name_en: "", category: "", description_ar: "", min_age: 0, max_age: 120, gender: "both", active: true
+  });
+
   const fileRef = useRef<HTMLInputElement>(null);
 
   const fnListReq = useServerFn(listRequests);
@@ -114,6 +122,32 @@ function AdminPage() {
     await fnDelete({ data: { id } });
     qc.invalidateQueries({ queryKey: ["admin-requests"] });
   }
+    const openEditModal = (test: any) => {
+    setEditingTest(test);
+    setTestForm({ ...test, name_en: test.name_en || "", category: test.category || "", description_ar: test.description_ar || "" });
+    setIsModalOpen(true);
+  };
+
+  const handleSaveTest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setActionLoading(true);
+    const payload = { ...testForm, min_age: Number(testForm.min_age), max_age: Number(testForm.max_age) };
+    const { error } = editingTest?.id 
+      ? await supabase.from("medical_tests").update(payload).eq("id", editingTest.id)
+      : await supabase.from("medical_tests").insert(payload);
+    
+    if (error) toast.error(error.message);
+    else { toast.success("تم حفظ الفحص بنجاح"); setIsModalOpen(false); qc.invalidateQueries({ queryKey: ["admin-tests"] }); }
+    setActionLoading(false);
+  };
+
+  const handleDeleteTest = async (id: string) => {
+    if (!confirm("هل تود حذف هذا الفحص نهائياً؟")) return;
+    const { error } = await supabase.from("medical_tests").delete().eq("id", id);
+    if (error) toast.error(error.message);
+    else { toast.success("تم الحذف بنجاح"); qc.invalidateQueries({ queryKey: ["admin-tests"] }); }
+  };
+
 
   return (
     <div className="min-h-screen bg-secondary/30">
@@ -207,7 +241,21 @@ function AdminPage() {
           </>
         )}
 
-        {tab === "tests" && (
+        {tests.data?.filter((t: any) => t.name_ar.includes(testSearch) || t.code.includes(testSearch)).map((t: any) => (
+    <tr key={t.id} className="border-t border-border hover:bg-muted/30">
+      <td className="p-3 font-mono text-xs">{t.code}</td>
+      <td className="p-3">{t.name_ar}</td>
+      <td className="p-3 text-xs">{t.category || "عام"}</td>
+      <td className="p-3 text-xs">{t.min_age} - {t.max_age} سنة</td>
+      <td className="p-3 text-xs">{t.gender === "both" ? "الكل" : t.gender === "male" ? "ذكر" : "أنثى"}</td>
+      <td className="p-3 text-center flex justify-center gap-2">
+        <button onClick={() => openEditModal(t)} className="text-blue-600 p-1 hover:bg-blue-50 rounded">
+        <Edit2 className="h-4 w-4" /></button>
+        <button onClick={() => handleDeleteTest(t.id)} className="text-destructive p-1 hover:bg-destructive/5 rounded"><Trash2 className="h-4 w-4" /></button>
+      </td>
+    </tr>
+  ))}
+ && (
           <>
             <div className="flex flex-wrap items-center gap-3 mb-4">
               <button onClick={exportTestsTemplate} className="btn-secondary text-sm">
@@ -249,7 +297,7 @@ function AdminPage() {
               </div>
             </div>
           </>
-        )}
+        )
       </main>
     </div>
   );

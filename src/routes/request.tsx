@@ -42,7 +42,7 @@ function RequestPage() {
   const fetchTests = useServerFn(getPublicTests);
   const submit = useServerFn(submitRequest);
   
-  const { data: allTests = [] } = useQuery({
+  const { data: allTests = [], isLoading } = useQuery({
     queryKey: ["public-tests"],
     queryFn: () => fetchTests(),
   });
@@ -58,9 +58,8 @@ function RequestPage() {
 
   const age = useMemo(() => (birthDate ? calculateAge(birthDate) : null), [birthDate]);
 
-  // تم تحسين منطق التصفية هنا لضمان مطابقة أرقام السن وتجنب سقوط قيمة both
   const applicableTests = useMemo(() => {
-    if (age == null || !personal.gender) return [];
+    if (age == null || !personal.gender || allTests.length === 0) return [];
     return allTests.filter((t) => {
       const min = Number(t.min_age);
       const max = Number(t.max_age);
@@ -70,12 +69,12 @@ function RequestPage() {
     });
   }, [allTests, age, personal.gender]);
 
-  // تم تحديث الـ useEffect ليعمل فقط عندما يتم تحميل الفحوصات لأول مرة بنجاح لمنع تصفير اللائحة
+  // تحديث الاختيارات فور الانتقال للخطوة الثانية لضمان تعبئة الفحوصات المصفاة
   useEffect(() => {
-    if (applicableTests.length > 0 && selectedIds.size === 0) {
+    if (step === 2 && applicableTests.length > 0) {
       setSelectedIds(new Set(applicableTests.map((t) => t.id)));
     }
-  }, [applicableTests]);
+  }, [step, applicableTests]);
 
   const grouped = useMemo(() => {
     const map: Record<string, typeof applicableTests> = {};
@@ -131,7 +130,7 @@ function RequestPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-secondary/40">
+    <div className="min-h-screen bg-gradient-to-b from-background to-secondary/40" dir="rtl">
       <header className="border-b border-border/60 bg-card/80 backdrop-blur">
         <div className="mx-auto max-w-4xl px-6 py-4 flex items-center justify-between">
           <Link to="/" className="font-bold">منصـة بصـمـة ابتكـار</Link>
@@ -152,7 +151,7 @@ function RequestPage() {
             <div className="grid md:grid-cols-2 gap-4 mt-6">
               <Field label="رقم الهوية / الإقامة">
                 <input
-                  className="w-full rounded-lg border border-border px-3 py-2 bg-background"
+                  className="w-full rounded-lg border border-border px-3 py-2 bg-background input"
                   value={personal.national_id}
                   onChange={(e) => setPersonal({ ...personal, national_id: e.target.value.replace(/\D/g, "") })}
                   placeholder="1xxxxxxxxx"
@@ -161,7 +160,7 @@ function RequestPage() {
               </Field>
               <Field label="رقم الجوال">
                 <input
-                  className="w-full rounded-lg border border-border px-3 py-2 bg-background"
+                  className="w-full rounded-lg border border-border px-3 py-2 bg-background input"
                   value={personal.phone}
                   onChange={(e) => setPersonal({ ...personal, phone: e.target.value.replace(/[^\d+]/g, "") })}
                   placeholder="05xxxxxxxx"
@@ -197,9 +196,9 @@ function RequestPage() {
             <div className="mt-4">
               <Field label={`تاريخ الميلاد (${personal.calendar_type === "hijri" ? "هجري" : "ميلادي"})`}>
                 <div className="grid grid-cols-3 gap-2">
-                  <input className="w-full rounded-lg border border-border px-3 py-2 bg-background" placeholder="اليوم" value={personal.birth_day} onChange={(e) => setPersonal({ ...personal, birth_day: e.target.value.replace(/\D/g, "").slice(0, 2) })} />
-                  <input className="w-full rounded-lg border border-border px-3 py-2 bg-background" placeholder="الشهر" value={personal.birth_month} onChange={(e) => setPersonal({ ...personal, birth_month: e.target.value.replace(/\D/g, "").slice(0, 2) })} />
-                  <input className="w-full rounded-lg border border-border px-3 py-2 bg-background" placeholder="السنة" value={personal.birth_year} onChange={(e) => setPersonal({ ...personal, birth_year: e.target.value.replace(/\D/g, "").slice(0, 4) })} />
+                  <input className="w-full rounded-lg border border-border px-3 py-2 bg-background input" placeholder="اليوم" value={personal.birth_day} onChange={(e) => setPersonal({ ...personal, birth_day: e.target.value.replace(/\D/g, "").slice(0, 2) })} />
+                                    <input className="w-full rounded-lg border border-border px-3 py-2 bg-background input" placeholder="الشهر" value={personal.birth_month} onChange={(e) => setPersonal({ ...personal, birth_month: e.target.value.replace(/\D/g, "").slice(0, 2) })} />
+                  <input className="w-full rounded-lg border border-border px-3 py-2 bg-background input" placeholder="السنة" value={personal.birth_year} onChange={(e) => setPersonal({ ...personal, birth_year: e.target.value.replace(/\D/g, "").slice(0, 4) })} />
                 </div>
                 {age != null && age >= 0 && (
                   <p className="text-sm text-muted-foreground mt-2">العمر المحسوب: <b>{age}</b> سنة</p>
@@ -225,76 +224,85 @@ function RequestPage() {
             <h1 className="text-2xl font-bold">الفحوصات الموصى بها</h1>
             <p className="text-sm text-muted-foreground mt-1">بناءً على العمر ({age} سنة) والجنس ({personal.gender === "male" ? "ذكر" : "أنثى"})، تم اختيار الفحوصات التالية تلقائياً.</p>
 
-            {applicableTests.length === 0 ? (
-
-              <p className="text-muted-foreground mt-6">لا توجد فحوصات مطابقة حالياً.</p>
+            {isLoading ? (
+              <div className="flex justify-center my-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+            ) : applicableTests.length === 0 ? (
+              <p className="my-8 text-center text-muted-foreground">لا توجد فحوصات مطابقة حالياً لجنسك وعمرك.</p>
             ) : (
-              <div className="mt-6 space-y-6">
-                {Object.entries(grouped).map(([cat, tests]) => (
-                  <div key={cat}>
-                    <h3 className="font-semibold text-sm text-muted-foreground mb-2">{cat}</h3>
-                    <div className="grid md:grid-cols-2 gap-2">
-                      {tests.map((t) => {
-                        const checked = selectedIds.has(t.id);
-                        return (
-                          <label key={t.id} className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition ${checked ? "border-primary bg-primary/5" : "border-border bg-background hover:border-primary/40"}`}>
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              onChange={() => {
-                                const s = new Set(selectedIds);
-                                if (checked) s.delete(t.id); else s.add(t.id);
-                                setSelectedIds(s);
-                              }}
-                              className="mt-1 h-4 w-4 accent-[oklch(0.52_0.14_195)]"
-                            />
-                            <div className="flex-1">
-                              <div className="font-medium">{t.name_ar}</div>
-                              {t.description_ar && <div className="text-xs text-muted-foreground">{t.description_ar}</div>}
-                            </div>
-                          </label>
-                        );
-                      })}
+              <div className="space-y-6 mt-6">
+                {Object.entries(grouped).map(([category, tests]) => (
+                  <div key={category} className="space-y-2">
+                    <h3 className="font-semibold text-primary border-r-4 border-primary pr-2 text-right">{category}</h3>
+                    <div className="grid sm:grid-cols-2 gap-2">
+                      {tests.map((t) => (
+                        <div
+                          key={t.id}
+                          onClick={() => toggleTest(t.id)}
+                          className={`flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition select-none text-right ${selectedIds.has(t.id) ? "border-primary bg-primary/5" : "border-border bg-background hover:bg-muted"}`}
+                        >
+                          <input type="checkbox" checked={selectedIds.has(t.id)} readOnly className="mt-1" />
+                          <div>
+                            <p className="font-medium text-sm">{t.name_ar}</p>
+                            {t.description_ar && <p className="text-xs text-muted-foreground mt-0.5">{t.description_ar}</p>}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 ))}
               </div>
             )}
 
-            <Field label="ملاحظات (اختياري)">
-              <textarea className="input" rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="أي معلومات إضافية..." />
-            </Field>
+            <div className="mt-6">
+              <Field label="ملاحظات إضافية (اختياري)">
+                <textarea
+                  className="w-full rounded-lg border border-border px-3 py-2 bg-background min-h-[80px]"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="أي معلومات صحية أخرى تود إضافتها..."
+                />
+              </Field>
+            </div>
 
-            <div className="flex justify-between mt-8">
-              <button onClick={() => setStep(1)} className="btn-secondary">
-                <ArrowRight className="h-4 w-4" /> السابق
+            <div className="flex justify-between mt-8 border-t border-border pt-4">
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                className="flex items-center gap-2 rounded-xl border border-border px-4 py-2 font-medium bg-background hover:bg-muted transition"
+              >
+                السابق <ArrowRight className="h-4 w-4" />
               </button>
               <button
-                disabled={submitting || selectedIds.size === 0}
+                type="button"
+                disabled={submitting}
                 onClick={handleSubmit}
-                className="btn-primary"
+                className="flex items-center gap-2 rounded-xl bg-primary px-6 py-2.5 font-semibold text-primary-foreground shadow transition hover:bg-primary/90 disabled:opacity-50"
               >
-                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                إرسال الطلب ({selectedIds.size} فحص)
+                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "إرسال الطلب"}
               </button>
             </div>
           </section>
         )}
 
-        {step === 3 && confirmationId && (
-          <section className="rounded-2xl border border-border bg-card p-8 md:p-10 shadow-sm text-center">
-            <div className="mx-auto h-16 w-16 rounded-full bg-primary/10 grid place-items-center">
-              <CheckCircle2 className="h-8 w-8 text-primary" />
+        {step === 3 && (
+          <section className="rounded-2xl border border-border bg-card p-8 shadow-sm text-center">
+            <div className="mx-auto h-12 w-12 text-emerald-500 bg-emerald-500/10 rounded-full grid place-items-center mb-4">
+              <CheckCircle2 className="h-6 w-6" />
             </div>
-            <h1 className="mt-4 text-2xl font-bold">تم إرسال طلبك بنجاح</h1>
-            <p className="text-muted-foreground mt-2">رقم الطلب: <span className="font-mono">{confirmationId.slice(0, 8).toUpperCase()}</span></p>
-            <p className="text-sm text-muted-foreground mt-4">
-              تم استلام طلبك وسيتم التواصل معك خلال أقرب وقت. تم إشعار المسؤولين تلقائياً بتفاصيل طلبك.
-            </p>
-            <div className="flex justify-center gap-3 mt-6">
-              <Link to="/" className="btn-secondary">العودة للرئيسية</Link>
-              <button onClick={() => { setStep(1); setConfirmationId(null); setPersonal({ national_id: "", gender: "", phone: "", calendar_type: "gregorian", birth_year: "", birth_month: "", birth_day: "" }); setNotes(""); }} className="btn-primary">طلب جديد</button>
-            </div>
+            <h1 className="text-2xl font-bold text-emerald-600">تم استلام طلبك بنجاح!</h1>
+            <p className="text-muted-foreground mt-2 max-w-md mx-auto">شكراً لك، تم حفظ بيانات الفحوصات الطبية المقترحة بنجاح وجاري مراجعتها من قِبل الفريق الطبي المختص.</p>
+            {confirmationId && (
+              <div className="bg-muted px-4 py-2 rounded-lg font-mono text-sm max-w-xs mx-auto mt-4 border border-border">
+                الرقم المرجعي: #{confirmationId.slice(0, 8).toUpperCase()}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => { setStep(1); setPersonal({ national_id: "", gender: "", phone: "", calendar_type: "gregorian", birth_year: "", birth_month: "", birth_day: "" }); setSelectedIds(new Set()); setNotes(""); }}
+              className="mt-6 rounded-xl border px-5 py-2 font-medium bg-background hover:bg-muted transition"
+            >
+              تقديم طلب آخر
+            </button>
           </section>
         )}
       </main>
@@ -304,8 +312,8 @@ function RequestPage() {
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="space-y-2 mt-4">
-      <label className="block text-sm font-medium">{label}</label>
+    <div className="flex flex-col gap-1.5 w-full text-right">
+      <label className="text-sm font-medium text-foreground/80">{label}</label>
       {children}
     </div>
   );

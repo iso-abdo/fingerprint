@@ -34,21 +34,17 @@ export const submitRequest = createServerFn({ method: "POST" })
       .single();
 
     if (error) throw new Error(error.message);
-
-    // تم تعطيل ربط بوابة Lovable لضمان استقلالية مشروعك وأمان بيانات المرضى
-    // يمكنك لاحقاً ربط خدمة Resend مباشرة بحسابك الخاص هنا إذا أردت إرسال إيميلات
     return { id: row.id, created_at: row.created_at };
   });
 
 export const getPublicTests = createServerFn({ method: "GET" }).handler(async () => {
   const { createClient } = await import("@supabase/supabase-js");
   
-  // توحيد قراءة المتغيرات لضمان عدم حدوث خطأ اتصال بقاعدة البيانات
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
-    throw new Error("Missing Supabase environment variables in server function.");
+    throw new Error("Missing Supabase environment variables");
   }
 
   const supabase = createClient(supabaseUrl, supabaseKey, {

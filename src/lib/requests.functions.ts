@@ -35,55 +35,32 @@ export const submitRequest = createServerFn({ method: "POST" })
 
     if (error) throw new Error(error.message);
 
-    // Attempt email notification (best-effort; requires email domain setup).
-    try {
-      const LOVABLE_API_KEY = process.env.LOVABLE_API_KEY;
-      const ADMIN_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || "isoemo79@gmai.com";
-      if (LOVABLE_API_KEY) {
-        const html = `
-          <div dir="rtl" style="font-family:Arial,sans-serif;padding:16px">
-            <h2>طلب فحوصات طبية جديد</h2>
-            <p><b>رقم الهوية:</b> ${data.national_id}</p>
-            <p><b>تاريخ الميلاد:</b> ${data.birth_date} (${data.calendar_type === "hijri" ? "هجري" : "ميلادي"})</p>
-            <p><b>العمر:</b> ${data.age_years} سنة</p>
-            <p><b>الجنس:</b> ${data.gender === "male" ? "ذكر" : "أنثى"}</p>
-            <p><b>الجوال:</b> ${data.phone}</p>
-            <h3>الفحوصات المطلوبة:</h3>
-            <ul>${data.selected_tests.map((t) => `<li>${t.name_ar}</li>`).join("")}</ul>
-            ${data.notes ? `<p><b>ملاحظات:</b> ${data.notes}</p>` : ""}
-          </div>`;
-        await fetch("https://connector-gateway.lovable.dev/resend/emails", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          },
-          body: JSON.stringify({
-            from: "Preventive Health <onboarding@resend.dev>",
-            to: [ADMIN_EMAIL],
-            subject: `طلب فحوصات جديد #${row.id.slice(0, 8)}`,
-            html,
-          }),
-        }).catch(() => {});
-        await supabaseAdmin.from("requests").update({ email_sent: true }).eq("id", row.id);
-      }
-    } catch (e) {
-      console.warn("Email notification skipped:", e);
-    }
-
+    // تم تعطيل ربط بوابة Lovable لضمان استقلالية مشروعك وأمان بيانات المرضى
+    // يمكنك لاحقاً ربط خدمة Resend مباشرة بحسابك الخاص هنا إذا أردت إرسال إيميلات
     return { id: row.id, created_at: row.created_at };
   });
 
 export const getPublicTests = createServerFn({ method: "GET" }).handler(async () => {
   const { createClient } = await import("@supabase/supabase-js");
-  const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
+  
+  // توحيد قراءة المتغيرات لضمان عدم حدوث خطأ اتصال بقاعدة البيانات
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error("Missing Supabase environment variables in server function.");
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseKey, {
     auth: { persistSession: false, autoRefreshToken: false, storage: undefined },
   });
+  
   const { data, error } = await supabase
     .from("medical_tests")
     .select("id, code, name_ar, name_en, category, description_ar, min_age, max_age, gender")
     .eq("active", true)
     .order("category", { ascending: true });
+    
   if (error) throw new Error(error.message);
   return data;
 });

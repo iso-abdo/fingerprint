@@ -41,6 +41,7 @@ function RequestPage() {
 
   const fetchTests = useServerFn(getPublicTests);
   const submit = useServerFn(submitRequest);
+  
   const { data: allTests = [] } = useQuery({
     queryKey: ["public-tests"],
     queryFn: () => fetchTests(),
@@ -57,18 +58,23 @@ function RequestPage() {
 
   const age = useMemo(() => (birthDate ? calculateAge(birthDate) : null), [birthDate]);
 
+  // تم تحسين منطق التصفية هنا لضمان مطابقة أرقام السن وتجنب سقوط قيمة both
   const applicableTests = useMemo(() => {
     if (age == null || !personal.gender) return [];
-    return allTests.filter(
-      (t) =>
-        age >= t.min_age &&
-        age <= t.max_age &&
-        (t.gender === "both" || t.gender === personal.gender)
-    );
+    return allTests.filter((t) => {
+      const min = Number(t.min_age);
+      const max = Number(t.max_age);
+      const matchesAge = age >= min && age <= max;
+      const matchesGender = t.gender === "both" || t.gender === personal.gender;
+      return matchesAge && matchesGender;
+    });
   }, [allTests, age, personal.gender]);
 
+  // تم تحديث الـ useEffect ليعمل فقط عندما يتم تحميل الفحوصات لأول مرة بنجاح لمنع تصفير اللائحة
   useEffect(() => {
-    setSelectedIds(new Set(applicableTests.map((t) => t.id)));
+    if (applicableTests.length > 0 && selectedIds.size === 0) {
+      setSelectedIds(new Set(applicableTests.map((t) => t.id)));
+    }
   }, [applicableTests]);
 
   const grouped = useMemo(() => {
@@ -117,6 +123,13 @@ function RequestPage() {
     }
   }
 
+  const toggleTest = (id: string) => {
+    const next = new Set(selectedIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedIds(next);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/40">
       <header className="border-b border-border/60 bg-card/80 backdrop-blur">
@@ -139,7 +152,7 @@ function RequestPage() {
             <div className="grid md:grid-cols-2 gap-4 mt-6">
               <Field label="رقم الهوية / الإقامة">
                 <input
-                  className="input"
+                  className="w-full rounded-lg border border-border px-3 py-2 bg-background"
                   value={personal.national_id}
                   onChange={(e) => setPersonal({ ...personal, national_id: e.target.value.replace(/\D/g, "") })}
                   placeholder="1xxxxxxxxx"
@@ -148,7 +161,7 @@ function RequestPage() {
               </Field>
               <Field label="رقم الجوال">
                 <input
-                  className="input"
+                  className="w-full rounded-lg border border-border px-3 py-2 bg-background"
                   value={personal.phone}
                   onChange={(e) => setPersonal({ ...personal, phone: e.target.value.replace(/[^\d+]/g, "") })}
                   placeholder="05xxxxxxxx"
@@ -181,22 +194,25 @@ function RequestPage() {
               </Field>
             </div>
 
-            <Field label={`تاريخ الميلاد (${personal.calendar_type === "hijri" ? "هجري" : "ميلادي"})`}>
-              <div className="grid grid-cols-3 gap-2">
-                <input className="input" placeholder="اليوم" value={personal.birth_day} onChange={(e) => setPersonal({ ...personal, birth_day: e.target.value.replace(/\D/g, "").slice(0, 2) })} />
-                <input className="input" placeholder="الشهر" value={personal.birth_month} onChange={(e) => setPersonal({ ...personal, birth_month: e.target.value.replace(/\D/g, "").slice(0, 2) })} />
-                <input className="input" placeholder="السنة" value={personal.birth_year} onChange={(e) => setPersonal({ ...personal, birth_year: e.target.value.replace(/\D/g, "").slice(0, 4) })} />
-              </div>
-              {age != null && age >= 0 && (
-                <p className="text-sm text-muted-foreground mt-2">العمر المحسوب: <b>{age}</b> سنة</p>
-              )}
-            </Field>
+            <div className="mt-4">
+              <Field label={`تاريخ الميلاد (${personal.calendar_type === "hijri" ? "هجري" : "ميلادي"})`}>
+                <div className="grid grid-cols-3 gap-2">
+                  <input className="w-full rounded-lg border border-border px-3 py-2 bg-background" placeholder="اليوم" value={personal.birth_day} onChange={(e) => setPersonal({ ...personal, birth_day: e.target.value.replace(/\D/g, "").slice(0, 2) })} />
+                  <input className="w-full rounded-lg border border-border px-3 py-2 bg-background" placeholder="الشهر" value={personal.birth_month} onChange={(e) => setPersonal({ ...personal, birth_month: e.target.value.replace(/\D/g, "").slice(0, 2) })} />
+                  <input className="w-full rounded-lg border border-border px-3 py-2 bg-background" placeholder="السنة" value={personal.birth_year} onChange={(e) => setPersonal({ ...personal, birth_year: e.target.value.replace(/\D/g, "").slice(0, 4) })} />
+                </div>
+                {age != null && age >= 0 && (
+                  <p className="text-sm text-muted-foreground mt-2">العمر المحسوب: <b>{age}</b> سنة</p>
+                )}
+              </Field>
+            </div>
 
             <div className="flex justify-end mt-8">
               <button
+                type="button"
                 disabled={!canProceed1}
                 onClick={() => setStep(2)}
-                className="btn-primary"
+                className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 font-semibold text-primary-foreground shadow transition hover:bg-primary/90 disabled:opacity-50"
               >
                 التالي <ArrowLeft className="h-4 w-4" />
               </button>
@@ -207,11 +223,10 @@ function RequestPage() {
         {step === 2 && (
           <section className="rounded-2xl border border-border bg-card p-6 md:p-8 shadow-sm">
             <h1 className="text-2xl font-bold">الفحوصات الموصى بها</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              بناءً على العمر ({age} سنة) والجنس ({personal.gender === "male" ? "ذكر" : "أنثى"})، هذه هي الفحوصات المقترحة. يمكنك استثناء ما لا تحتاجه.
-            </p>
+            <p className="text-sm text-muted-foreground mt-1">بناءً على العمر ({age} سنة) والجنس ({personal.gender === "male" ? "ذكر" : "أنثى"})، تم اختيار الفحوصات التالية تلقائياً.</p>
 
-            {Object.keys(grouped).length === 0 ? (
+            {applicableTests.length === 0 ? (
+
               <p className="text-muted-foreground mt-6">لا توجد فحوصات مطابقة حالياً.</p>
             ) : (
               <div className="mt-6 space-y-6">

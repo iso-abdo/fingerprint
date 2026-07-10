@@ -1,11 +1,16 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
-import { getPublicTests, submitRequest } from "@/lib/requests.functions";
 import { hijriToGregorian, calculateAge } from "@/lib/hijri";
 import { toast } from "sonner";
 import { CheckCircle2, ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
+import { createClient } from "@supabase/supabase-js";
+
+// إنشاء اتصال مباشر وقوي بسوبابيس داخل الواجهة لضمان جلب البيانات تحت أي ظرف
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+const supabase = createClient(supabaseUrl || "", supabaseKey || "");
 
 export const Route = createFileRoute("/request")({
   head: () => ({ meta: [{ title: "طلب فحوصات طبية" }] }),
@@ -39,13 +44,32 @@ function RequestPage() {
   const [submitting, setSubmitting] = useState(false);
   const [confirmationId, setConfirmationId] = useState<string | null>(null);
 
-  const fetchTests = useServerFn(getPublicTests);
-  const submit = useServerFn(submitRequest);
-  
-  const { data: allTests = [], isLoading } = useQuery({
-    queryKey: ["public-tests"],
-    queryFn: () => fetchTests(),
+  // جلب الفحوصات مباشرة من سوبابيس بدون خادم وسيط لتفادي مشاكل Vercel المعلقة
+  const { data: allTests = [], isLoading, error: fetchError } = useQuery({
+    queryKey: ["public-tests-direct"],
+    queryFn: async () => {
+      if (!supabaseUrl || !supabaseKey) {
+        throw new Error("بيانات الاتصال بـ Supabase غير مكتملة في الواجهة");
+      }
+      const { data, error } = await supabase
+        .from("medical_tests")
+        .select("id, code, name_ar, name_en, category, description_ar, min_age, max_age, gender")
+        .eq("active", true)
+        .order("category", { ascending: true });
+        
+      if (error) throw error;
+      return data || [];
+    },
+    retry: 1
   });
+
+  // طباعة الأخطاء في الكونسول إذا فشل الاتصال المباشر بسوبابيس
+  useEffect(() => {
+    if (fetchError) {
+      console.error("Supabase Fetch Error:", fetchError);
+      toast.error("فشل جلب قائمة الفحوصات من قاعدة البيانات");
+    }
+  }, [fetchError]);
 
   const birthDate = useMemo(() => {
     const y = parseInt(personal.birth_year);
@@ -69,7 +93,6 @@ function RequestPage() {
     });
   }, [allTests, age, personal.gender]);
 
-  // تحديث الاختيارات فور الانتقال للخطوة الثانية لضمان تعبئة الفحوصات المصفاة
   useEffect(() => {
     if (step === 2 && applicableTests.length > 0) {
       setSelectedIds(new Set(applicableTests.map((t) => t.id)));
@@ -100,8 +123,11 @@ function RequestPage() {
     try {
       const selected = applicableTests.filter((t) => selectedIds.has(t.id));
       const excluded = applicableTests.filter((t) => !selectedIds.has(t.id)).map((t) => t.id);
-      const res = await submit({
-        data: {
+      
+      // إرسال الطلب مباشرة إلى جدول requests
+      const { data: row, error } = await supabase
+        .from("requests")
+        .insert({
           national_id: personal.national_id,
           birth_date: birthDate.toISOString().slice(0, 10),
           calendar_type: personal.calendar_type,
@@ -111,9 +137,13 @@ function RequestPage() {
           selected_tests: selected.map((t) => ({ id: t.id, name_ar: t.name_ar, code: t.code })),
           excluded_tests: excluded,
           notes: notes || null,
-        },
-      });
-      setConfirmationId(res.id);
+        })
+        .select("id")
+        .single();
+
+      if (error) throw error;
+
+      setConfirmationId(row.id);
       setStep(3);
     } catch (e: any) {
       toast.error(e.message || "تعذر إرسال الطلب");
@@ -197,10 +227,10 @@ function RequestPage() {
               <Field label={`تاريخ الميلاد (${personal.calendar_type === "hijri" ? "هجري" : "ميلادي"})`}>
                 <div className="grid grid-cols-3 gap-2">
                   <input className="w-full rounded-lg border border-border px-3 py-2 bg-background input" placeholder="اليوم" value={personal.birth_day} onChange={(e) => setPersonal({ ...personal, birth_day: e.target.value.replace(/\D/g, "").slice(0, 2) })} />
-                                    <input className="w-full rounded-lg border border-border px-3 py-2 bg-background input" placeholder="الشهر" value={personal.birth_month} onChange={(e) => setPersonal({ ...personal, birth_month: e.target.value.replace(/\D/g, "").slice(0, 2) })} />
+                  <input className="w-full rounded-lg border border-border px-3 py-2 bg-background input" placeholder="الشهر" value={personal.birth_month} onChange={(e) => setPersonal({ ...personal, birth_month: e.target.value.replace(/\D/g, "").slice(0, 2) })} />
                   <input className="w-full rounded-lg border border-border px-3 py-2 bg-background input" placeholder="السنة" value={personal.birth_year} onChange={(e) => setPersonal({ ...personal, birth_year: e.target.value.replace(/\D/g, "").slice(0, 4) })} />
                 </div>
-                {age != null && age >= 0 && (
+                                {age != null && age >= 0 && (
                   <p className="text-sm text-muted-foreground mt-2">العمر المحسوب: <b>{age}</b> سنة</p>
                 )}
               </Field>
@@ -227,7 +257,7 @@ function RequestPage() {
             {isLoading ? (
               <div className="flex justify-center my-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
             ) : applicableTests.length === 0 ? (
-              <p className="my-8 text-center text-muted-foreground">لا توجد فحوصات مطابقة حالياً لجنسك وعمرك.</p>
+              <p className="my-8 text-center text-muted-foreground">لا توجد فحوصات مطابقة حالياً لجنسك وعمرك في قاعدة البيانات.</p>
             ) : (
               <div className="space-y-6 mt-6">
                 {Object.entries(grouped).map(([category, tests]) => (
@@ -318,3 +348,4 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     </div>
   );
 }
+

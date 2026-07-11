@@ -34,7 +34,7 @@ function Index() {
 >
   
   {/* التعديل هنا: items-start مع pt-24 لرفع الزر باتجاه الأعلى فوق المنتصف */}
-  <div className="absolute inset-0 flex justify-center items-start pt-70">
+  <div className="absolute inset-0 flex justify-center items-start pt-120">
     <Link
       to="/request"
       className="inline-flex items-center gap-2 rounded-lg bg-primary/20 backdrop-blur-md border border-primary/30 px-8 py-3.5 text-foreground font-semibold shadow-lg shadow-primary/5 hover:bg-primary/40 transition transform hover:scale-105"

@@ -35,13 +35,13 @@ function Index() {
 >
   
   {/* التعديل: الارتفاع مخصص pt-[85] لجعل التموضع دقيقاً حسب رغبتك */}
-  <div className="absolute inset-0 flex justify-center items-start pt-85px">
+    <div className="absolute inset-0 flex justify-center items-start pt-70">
     <Link
       to="/request"
-      className="inline-block rounded-lg bg-transparent border-none w-64 h-84px transition transform hover:scale-105"
-      aria-label="ابدأ الآن"
+      className="inline-flex items-center gap-2 rounded-lg bg-primary/20 backdrop-blur-md border border-primary/30 px-8 py-3.5 text-foreground font-semibold shadow-lg shadow-primary/5 hover:bg-primary/40 transition transform hover:scale-105"
     >
-      {/* الكرت شفاف تماماً بدون أي نص أو أيقونات بالداخل ومساحته ممتدة لتغطية أبعاد الطول والعرض الجديدة */}
+      ابــدأ الآن
+      <ArrowLeft className="h-4 w-4" />
     </Link>
   </div>
 </section>

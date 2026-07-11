@@ -9,7 +9,7 @@ export const Route = createFileRoute("/")({
 function Index() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/40">
-      <header className="border-b border-border/60 bg-card/80 backdrop-blur">
+      <header className="border-b border-border/20 bg-card/80 backdrop-blur">
         <div className="mx-auto max-w-6xl px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="h-9 w-9 rounded-lg bg-primary text-primary-foreground grid place-items-center">

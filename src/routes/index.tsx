@@ -35,16 +35,17 @@ function Index() {
 >
   
   {/* التعديل: الارتفاع مخصص pt-[85] لجعل التموضع دقيقاً حسب رغبتك */}
-    <div className="absolute inset-0 flex justify-center items-start pt-85">
-    <Link
-      to="/request"
-  // الزرار شفاف    
-      className="inline-flex items-center gap-2 rounded-lg bg-transparent border-none text-foreground font-semibold shadow-lg shadow-primary/1 hover:bg-primary/5 transition transform hover:scale-105"
-    >
-      ابــدأ الآن
-      <ArrowLeft className="h-4 w-4" />
-    </Link>
-  </div>
+<div className="absolute inset-0 flex justify-center items-start pt-[85px]">
+  <Link
+    to="/request"
+    // التحكم في الطول والعرض هنا عبر w-[...] و h-[...] مع إضافة justify-center لتوسيط النص والسهم بالداخل
+    className="inline-flex items-center justify-center gap-2 w-[200px] h-[60px] rounded-lg bg-transparent border-none text-foreground font-semibold shadow-lg shadow-primary/15 hover:bg-primary/15 transition transform hover:scale-105"
+  >
+    ابــدأ الآن
+    <ArrowLeft className="h-4 w-4" />
+  </Link>
+</div>
+
 </section>
 
 

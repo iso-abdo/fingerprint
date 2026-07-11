@@ -25,7 +25,7 @@ function Index() {
 
       <main className="w-full py-20 ">
 <section 
-  className="relative z-10 justify-center items-center w-full bg-contain bg-no-repeat bg-center shadow-md border-y border-border/15 pb-12"
+  className="relative z-30 justify-center items-center w-full bg-contain bg-no-repeat bg-center shadow-md border-y border-border/15 pb-12"
   style={{ backgroundImage: "url('/hero-bg.png')" }}
 >
   

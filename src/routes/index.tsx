@@ -38,7 +38,8 @@ function Index() {
     <div className="absolute inset-0 flex justify-center items-start pt-85">
     <Link
       to="/request"
-      className="inline-flex items-center gap-2 rounded-lg bg-primary/0 backdrop-blur-md border border-primary/30 px-8 py-3.5 text-foreground font-semibold shadow-lg shadow-primary/1 hover:bg-primary/5 transition transform hover:scale-105"
+  // الزرار شفاف    
+      className="inline-flex items-center gap-2 rounded-lg bg-transparent border-none text-foreground font-semibold shadow-lg shadow-primary/1 hover:bg-primary/5 transition transform hover:scale-105"
     >
       ابــدأ الآن
       <ArrowLeft className="h-4 w-4" />

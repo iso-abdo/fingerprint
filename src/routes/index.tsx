@@ -9,7 +9,7 @@ export const Route = createFileRoute("/")({
 function Index() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/40">
-      <header className="border-b border-border/20 bg-card/80 backdrop-blur">
+      <header className="border-b border-border/10 bg-card/80 backdrop-blur">
         <div className="mx-auto max-w-6xl px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="h-9 w-9 rounded-lg bg-primary text-primary-foreground grid place-items-center">
@@ -23,17 +23,12 @@ function Index() {
         </div>
       </header>
 
-      {/* 1. قمنا بإلغاء الهوامش الجانبية والحد الأقصى للعرض من حاوية الـ main */}
       <main className="w-full py-20 ">
-        
-        {/* 2. التعديل: تحويل الصندوق ليكون بكامل عرض الصفحة w-full وإزالة الحواف الدائرية الكبيرة لتلتصق بالشاشة */}
-        {/* 2. التعديل: تحويل الصندوق ليكون بكامل عرض الصفحة w-full وإزالة الحواف الدائرية الكبيرة لتلتصق بالشاشة */}
-{/* 2. التعديل: تحويل الصندوق ليكون بكامل عرض الصفحة w-full وإزالة الحواف الدائرية الكبيرة لتلتصق بالشاشة */}
 <section 
-  className="relative flex flex-col justify-start items-center w-full bg-contain bg-no-repeat bg-center shadow-md border-y border-border/15 pb-12"
+  className="relative z-10 justify-center items-center w-full bg-contain bg-no-repeat bg-center shadow-md border-y border-border/15 pb-12"
   style={{ backgroundImage: "url('/hero-bg.png')" }}
 >
-  {/* جعلنا التموضع يبدأ من أعلى الكرت مباشرة top-0 مع إزاحة خفيفة للزرار */}
+  
   <div className="absolute inset-x-0 top-[85.5px] flex justify-center items-start">
     <Link
       to="/request"

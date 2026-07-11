@@ -35,10 +35,10 @@ function Index() {
 >
   
   {/* التعديل: الارتفاع مخصص pt-[85] لجعل التموضع دقيقاً حسب رغبتك */}
-  <div className="absolute inset-0 flex justify-center items-start pt-[85px]">
+  <div className="absolute inset-0 flex justify-center items-start pt-85px">
     <Link
       to="/request"
-      className="inline-block rounded-lg bg-transparent border-none w-64 h-[84px] transition transform hover:scale-105"
+      className="inline-block rounded-lg bg-transparent border-none w-64 h-84px transition transform hover:scale-105"
       aria-label="ابدأ الآن"
     >
       {/* الكرت شفاف تماماً بدون أي نص أو أيقونات بالداخل ومساحته ممتدة لتغطية أبعاد الطول والعرض الجديدة */}

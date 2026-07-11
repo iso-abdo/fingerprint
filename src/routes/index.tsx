@@ -35,7 +35,7 @@ function Index() {
 >
   
   {/* التعديل: الارتفاع مخصص pt-[85] لجعل التموضع دقيقاً حسب رغبتك */}
-<div className="absolute inset-0 flex justify-center items-start pt-[360px]">
+<div className="absolute inset-0 flex justify-center items-start pt-[330px]">
   <Link
     to="/request"
     // التحكم في الطول والعرض هنا عبر w-[...] و h-[...] مع إضافة justify-center لتوسيط النص والسهم بالداخل

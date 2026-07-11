@@ -27,22 +27,24 @@ function Index() {
       <main className="w-full py-20">
         
         {/* 2. التعديل: تحويل الصندوق ليكون بكامل عرض الصفحة w-full وإزالة الحواف الدائرية الكبيرة لتلتصق بالشاشة */}
-        <section 
-          className="relative flex flex-col justify-end items-center w-full min-h-[600px] bg-contain bg-no-repeat bg-center shadow-md border-y border-border/15 pb-12"
-          style={{ backgroundImage: "url('/hero-bg.png')" }}
-        >
-          
-          {/* تم تعديل الحاوية والزر ليطفو فوق الصورة ويرتفع للأعلى ويكون شفافاً */}
-          <div className="absolute inset-0 flex items-center items-start pt-30">
-            <Link
-              to="/request"
-              className="inline-flex items-center gap-2 rounded-lg bg-primary/5 backdrop-blur-md border border-primary/6 px-8 py-3.5 text-foreground font-semibold shadow-lg shadow-primary/5 hover:bg-primary/5 transition transform hover:scale-105"
-            >
-              ابــدأ الآن
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-          </div>
-        </section>
+        {/* 2. التعديل: تحويل الصندوق ليكون بكامل عرض الصفحة w-full وإزالة الحواف الدائرية الكبيرة لتلتصق بالشاشة */}
+<section 
+  className="relative flex flex-col justify-end items-center w-full min-h-[600px] bg-contain bg-no-repeat bg-center shadow-md border-y border-border/15 pb-12"
+  style={{ backgroundImage: "url('/hero-bg.png')" }}
+>
+  
+  {/* التعديل هنا: items-start مع pt-24 لرفع الزر باتجاه الأعلى فوق المنتصف */}
+  <div className="absolute inset-0 flex justify-center items-start pt-24">
+    <Link
+      to="/request"
+      className="inline-flex items-center gap-2 rounded-lg bg-primary/20 backdrop-blur-md border border-primary/30 px-8 py-3.5 text-foreground font-semibold shadow-lg shadow-primary/5 hover:bg-primary/40 transition transform hover:scale-105"
+    >
+      ابــدأ الآن
+      <ArrowLeft className="h-4 w-4" />
+    </Link>
+  </div>
+</section>
+
 
         <section className="grid md:grid-cols-3 gap-6 mt-20 max-w-6xl mx-auto px-6">
           {[

@@ -24,28 +24,27 @@ function Index() {
       </header>
 
       {/* 1. قمنا بإلغاء الهوامش الجانبية والحد الأقصى للعرض من حاوية الـ main */}
-      <main className="w-full py-20">
+      <main className="w-full py-20 ">
         
         {/* 2. التعديل: تحويل الصندوق ليكون بكامل عرض الصفحة w-full وإزالة الحواف الدائرية الكبيرة لتلتصق بالشاشة */}
         {/* 2. التعديل: تحويل الصندوق ليكون بكامل عرض الصفحة w-full وإزالة الحواف الدائرية الكبيرة لتلتصق بالشاشة */}
 {/* 2. التعديل: تحويل الصندوق ليكون بكامل عرض الصفحة w-full وإزالة الحواف الدائرية الكبيرة لتلتصق بالشاشة */}
 <section 
-  className="relative flex flex-col justify-center itme-start w-full min-h-[700px] bg-contain bg-no-repeat bg-center shadow-md border-y border-border/15 pb-12"
+  className="relative flex flex-col justify-start items-center w-full bg-contain bg-no-repeat bg-center shadow-md border-y border-border/15 pb-12"
   style={{ backgroundImage: "url('/hero-bg.png')" }}
 >
-  
-  {/* التعديل: الارتفاع مخصص pt-[85] لجعل التموضع دقيقاً حسب رغبتك */}
-<div className="absolute inset-0 flex justify-center items-start pt-[325px]">
-  <Link
-    to="/request"
-    // التحكم في الطول والعرض هنا عبر w-[...] و h-[...] مع إضافة justify-center لتوسيط النص والسهم بالداخل
-    className="inline-flex items-center justify-center gap-2 w-[200px] h-[60px] rounded-lg bg-transparent border-none text-foreground font-semibold shadow-lg shadow-primary/15 hover:bg-primary/15 transition transform hover:scale-105"
-  >
-  
-  </Link>
-</div>
-
+  {/* جعلنا التموضع يبدأ من أعلى الكرت مباشرة top-0 مع إزاحة خفيفة للزرار */}
+  <div className="absolute inset-x-0 top-[85px] flex justify-center items-start">
+    <Link
+      to="/request"
+      className="inline-flex items-center justify-center gap-2 w-[200px] h-[60px] rounded-lg bg-transparent border-none text-foreground font-semibold shadow-lg shadow-primary/15 hover:bg-primary/15 transition transform hover:scale-105"
+    >
+      ابــدأ الآن
+      <ArrowLeft className="h-4 w-4" />
+    </Link>
+  </div>
 </section>
+
 
 
 

@@ -33,10 +33,10 @@ function Index() {
         >
           
           {/* تم تعديل الحاوية والزر ليطفو فوق الصورة ويرتفع للأعلى ويكون شفافاً */}
-          <div className="absolute inset-0 flex items-center justify-center">
+          <div className="absolute inset-0 flex items-center items-start pt-30">
             <Link
               to="/request"
-              className="inline-flex items-center gap-2 rounded-lg bg-primary/20 backdrop-blur-md border border-primary/30 px-8 py-3.5 text-foreground font-semibold shadow-lg shadow-primary/5 hover:bg-primary/40 transition transform hover:scale-105"
+              className="inline-flex items-center gap-2 rounded-lg bg-primary/5 backdrop-blur-md border border-primary/6 px-8 py-3.5 text-foreground font-semibold shadow-lg shadow-primary/5 hover:bg-primary/5 transition transform hover:scale-105"
             >
               ابــدأ الآن
               <ArrowLeft className="h-4 w-4" />

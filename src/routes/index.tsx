@@ -34,7 +34,7 @@ function Index() {
   style={{ backgroundImage: "url('/hero-bg.png')" }}
 >
   {/* جعلنا التموضع يبدأ من أعلى الكرت مباشرة top-0 مع إزاحة خفيفة للزرار */}
-  <div className="absolute inset-x-0 top-[85px] flex justify-center items-start">
+  <div className="absolute inset-x-0 top-[85.5px] flex justify-center items-start">
     <Link
       to="/request"
       className="inline-flex items-center justify-center gap-2 w-[200px] h-[60px] rounded-lg bg-transparent border-none text-foreground font-semibold shadow-lg shadow-primary/15 hover:bg-primary/15 transition transform hover:scale-105"

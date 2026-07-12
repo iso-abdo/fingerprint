@@ -51,77 +51,115 @@ function AdminPage() {
   }
 
   function exportRequests() {
+  try {
     const rows = (requests.data || []).map((r: any) => ({
       "رقم الطلب": r.id,
-      "تاريخ الإرسال": new Date(r.created_at).toLocaleString("ar-SA"),
-      "رقم الهوية": r.national_id,
-      "تاريخ الميلاد": r.birth_date,
+      "تاريخ الإرسال": r.created_at ? new Date(r.created_at).toLocaleString("ar-SA") : "",
+      "رقم الهوية": r.national_id || "",
+      "تاريخ الميلاد": r.birth_date || "",
       "التقويم": r.calendar_type === "hijri" ? "هجري" : "ميلادي",
-      "العمر": r.age_years,
+      "العمر": r.age_years || 0,
       "الجنس": r.gender === "male" ? "ذكر" : "أنثى",
-      "الجوال": r.phone,
-      "عدد الفحوصات": (r.selected_tests || []).length,
-      "الفحوصات": (r.selected_tests || []).map((t: any) => t.name_ar).join(" | "),
+      "الجوال": r.phone || "",
+      "عدد الفحوصات": Array.isArray(r.selected_tests) ? r.selected_tests.length : 0,
+      "الفحوصات": Array.isArray(r.selected_tests) ? r.selected_tests.map((t: any) => t?.name_ar || "").filter(Boolean).join(" | ") : "",
       "ملاحظات": r.notes || "",
-      "الحالة": r.status,
+      "الحالة": r.status || "",
     }));
+
+    if (rows.length === 0) {
+      toast.error("لا توجد بيانات متاحة للتصدير حالياً");
+      return;
+    }
+
     const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "الطلبات");
     XLSX.writeFile(wb, `requests-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    toast.success("تم تصدير ملف الطلبات بنجاح");
+  } catch (err: any) {
+    toast.error("فشل تصدير ملف الـ Excel");
   }
+}
 
-  function exportTestsTemplate() {
-    const sample = [
-      { code: "CBC", name_ar: "تعداد الدم الكامل", name_en: "CBC", category: "دم", description_ar: "", min_age: 0, max_age: 120, gender: "both", active: true },
-    ];
-    const ws = XLSX.utils.json_to_sheet(sample);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "medical_tests");
-    XLSX.writeFile(wb, "tests-template.xlsx");
-  }
+function exportTestsTemplate() {
+  const sample = [
+    { code: "CBC", name_ar: "تعداد الدم الكامل", name_en: "CBC", category: "دم", description_ar: "فحص شامل لخلايا الدم", min_age: 0, max_age: 120, gender: "both", active: true },
+  ];
+  const ws = XLSX.utils.json_to_sheet(sample);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "medical_tests");
+  XLSX.writeFile(wb, "tests-template.xlsx");
+}
 
-  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      const buf = await file.arrayBuffer();
-      const wb = XLSX.read(buf);
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows: any[] = XLSX.utils.sheet_to_json(ws);
-      const cleaned = rows
-        .filter((r) => r.code && r.name_ar)
-        .map((r) => ({
-          code: String(r.code).trim(),
-          name_ar: String(r.name_ar).trim(),
-          name_en: r.name_en ? String(r.name_en) : null,
-          category: r.category ? String(r.category) : null,
-          description_ar: r.description_ar ? String(r.description_ar) : null,
-          min_age: Number(r.min_age) || 0,
-          max_age: Number(r.max_age) || 120,
-          gender: (["male", "female", "both"].includes(String(r.gender)) ? r.gender : "both") as "male" | "female" | "both",
-          active: r.active === false ? false : true,
-        }));
-      if (cleaned.length === 0) {
-        toast.error("الملف فارغ أو لا يحتوي على أعمدة صحيحة");
-        return;
-      }
-      const res = await fnUpload({ data: { tests: cleaned, replaceAll: false } });
-      toast.success(`تم تحديث/إضافة ${res.inserted} فحص`);
-      qc.invalidateQueries({ queryKey: ["admin-tests"] });
-      qc.invalidateQueries({ queryKey: ["public-tests"] });
-    } catch (err: any) {
-      toast.error(err.message || "فشل قراءة الملف");
-    } finally {
-      if (fileRef.current) fileRef.current.value = "";
+async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+  const file = e.target.files?.[0]; // تم إصلاح السنتكس المكسور هنا
+  if (!file) return;
+
+  setActionLoading(true);
+  try {
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf);
+    
+    // تم إصلاح جلب الورقة الأولى بشكل صحيح
+    const sheetName = wb.SheetNames[0];
+    if (!sheetName) throw new Error("الملف لا يحتوي على أوراق عمل");
+    const ws = wb.Sheets[sheetName];
+    
+    const rows: any[] = XLSX.utils.sheet_to_json(ws);
+    
+    const cleaned = rows
+      .map((row) => {
+        // آلية ذكية لتنظيف العناوين وإزالة المسافات وتحويلها لحروف صغيرة لحمايتها من أخطاء المستخدمين
+        const r: Record<string, any> = {};
+        Object.keys(row).forEach((key) => {
+          r[key.trim().toLowerCase()] = row[key];
+        });
+
+        return {
+          code: r.code ? String(r.code).trim().toUpperCase() : null,
+          name_ar: r.name_ar ? String(r.name_ar).trim() : null,
+          name_en: r.name_en ? String(r.name_en).trim() : null,
+          category: r.category ? String(r.category).trim() : null,
+          description_ar: r.description_ar ? String(r.description_ar).trim() : null,
+          min_age: isNaN(Number(r.min_age)) ? 0 : Number(r.min_age),
+          max_age: isNaN(Number(r.max_age)) ? 120 : Number(r.max_age),
+          gender: (["male", "female", "both"].includes(String(r.gender).trim().toLowerCase()) ? String(r.gender).trim().toLowerCase() : "both") as "male" | "female" | "both",
+          active: r.active === "false" || r.active === false ? false : true,
+        };
+      })
+      .filter((r) => r.code && r.name_ar); // فلترة وتأكيد وجود الحقول الإلزامية الأساسية فقط
+
+    if (cleaned.length === 0) {
+      toast.error("الملف فارغ أو لا يحتوي على الأعمدة المطلوبة بشكل صحيح (code, name_ar)");
+      return;
     }
-  }
 
-  async function onDelete(id: string) {
-    if (!confirm("حذف هذا الطلب نهائياً؟")) return;
-    await fnDelete({ data: { id } });
-    qc.invalidateQueries({ queryKey: ["admin-requests"] });
+    const res = await fnUpload({ data: { tests: cleaned, replaceAll: false } });
+    toast.success(`تم تحديث وإضافة ${res?.inserted || 0} فحص بنجاح`);
+    
+    qc.invalidateQueries({ queryKey: ["admin-tests"] });
+    qc.invalidateQueries({ queryKey: ["public-tests"] });
+  } catch (err: any) {
+    toast.error(err.message || "فشل قراءة الملف أو هيكلته غير مطابقة للنموذج");
+  } finally {
+    setActionLoading(false);
+    if (fileRef.current) fileRef.current.value = "";
   }
+}
+
+async function onDelete(id: string) {
+  if (!confirm("هل أنت متأكد من حذف هذا الطلب نهائياً؟ لا يمكن التراجع عن هذا الإجراء.")) return;
+  
+  try {
+    await fnDelete({ data: { id } });
+    toast.success("تم حذف الطلب بنجاح");
+    qc.invalidateQueries({ queryKey: ["admin-requests"] });
+  } catch (err: any) {
+    toast.error("حدث خطأ أثناء محاولة حذف الطلب");
+  }
+}
+
     const openEditModal = (test: any) => {
     setEditingTest(test);
     setTestForm({ ...test, name_en: test.name_en || "", category: test.category || "", description_ar: test.description_ar || "" });

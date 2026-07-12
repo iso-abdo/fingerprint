@@ -23,10 +23,10 @@ function Index() {
         </div>
       </header>
 
-      <main className="w-full pt-0 pb-20">
+      <main className="w-full  h-full pt-0 pb-5">
         {/* التعديل: تغيير bg-contain إلى bg-cover لتمتد الصورة بالكامل، وزيادة الارتفاع إلى min-h-[450px] أو ما يناسب أبعاد صورتك الأصلية */}
         <section 
-          className="relative flex justify-center items-center w-full min-h-[450px] bg-cover bg-no-repeat bg-center shadow-md border-y border-border/15"
+          className="relative flex justify-center items-center w-full h-screen bg-contain bg-no-repeat bg-center shadow-md border-y border-border/15"
           style={{ backgroundImage: "url('/hero-bg.png')" }}
         >
           {/* تم ضبط موقع الزرار ليتناسب مع أبعاد الخلفية الممتدة */}

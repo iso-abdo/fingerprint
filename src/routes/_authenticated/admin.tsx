@@ -93,7 +93,7 @@ function exportTestsTemplate() {
 }
 
 async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-  const file = e.target.files?.[0]; // تم إصلاح السنتكس المكسور هنا
+  const file = e.target.files?.[0]; // تم تصحيح قراءة الملف الأول هنا
   if (!file) return;
 
   setActionLoading(true);
@@ -101,8 +101,7 @@ async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const buf = await file.arrayBuffer();
     const wb = XLSX.read(buf);
     
-    // تم إصلاح جلب الورقة الأولى بشكل صحيح
-    const sheetName = wb.SheetNames[0];
+    const sheetName = wb.SheetNames[0]; // تم تصحيح الفهرس لقراءة أول ورقة عمل
     if (!sheetName) throw new Error("الملف لا يحتوي على أوراق عمل");
     const ws = wb.Sheets[sheetName];
     
@@ -110,7 +109,6 @@ async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     
     const cleaned = rows
       .map((row) => {
-        // آلية ذكية لتنظيف العناوين وإزالة المسافات وتحويلها لحروف صغيرة لحمايتها من أخطاء المستخدمين
         const r: Record<string, any> = {};
         Object.keys(row).forEach((key) => {
           r[key.trim().toLowerCase()] = row[key];
@@ -128,25 +126,33 @@ async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
           active: r.active === "false" || r.active === false ? false : true,
         };
       })
-      .filter((r) => r.code && r.name_ar); // فلترة وتأكيد وجود الحقول الإلزامية الأساسية فقط
+      .filter((r) => r.code && r.name_ar);
 
     if (cleaned.length === 0) {
       toast.error("الملف فارغ أو لا يحتوي على الأعمدة المطلوبة بشكل صحيح (code, name_ar)");
       return;
     }
 
-    const res = await fnUpload({ data: { tests: cleaned, replaceAll: false } });
-    toast.success(`تم تحديث وإضافة ${res?.inserted || 0} فحص بنجاح`);
+    // التنفيذ المباشر على Supabase من المتصفح بدون سيرفر Lovable
+    // نستخدم الـ upsert لكي يقوم بتحديث البيانات إذا كان الـ code موجوداً مسبقاً أو إضافته كجديد
+    const { data, error } = await supabase
+      .from("medical_tests")
+      .upsert(cleaned, { onConflict: "code" }); // يفترض هنا أن حقل code فريد UNIQUE في قاعدة البيانات لتحديثه عند التطابق
+
+    if (error) throw error;
+
+    toast.success(`تم معالجة ورفع الملف بنجاح وتحديث الفحوصات الطبية`);
     
     qc.invalidateQueries({ queryKey: ["admin-tests"] });
     qc.invalidateQueries({ queryKey: ["public-tests"] });
   } catch (err: any) {
-    toast.error(err.message || "فشل قراءة الملف أو هيكلته غير مطابقة للنموذج");
+    toast.error(err.message || "حدث خطأ أثناء رفع البيانات إلى Supabase مباشرة");
   } finally {
     setActionLoading(false);
     if (fileRef.current) fileRef.current.value = "";
   }
 }
+
 
 async function onDelete(id: string) {
   if (!confirm("هل أنت متأكد من حذف هذا الطلب نهائياً؟ لا يمكن التراجع عن هذا الإجراء.")) return;

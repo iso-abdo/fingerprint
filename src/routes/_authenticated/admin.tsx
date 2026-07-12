@@ -45,6 +45,17 @@ function AdminPage() {
     );
   }, [requests.data, search]);
 
+  const filteredTests = useMemo(() => {
+    const list = Array.isArray(tests.data) ? tests.data : [];
+    if (!testSearch) return list;
+    const s = testSearch.toLowerCase();
+    return list.filter((t: any) =>
+      String(t.code || "").toLowerCase().includes(s) ||
+      String(t.name_ar || "").toLowerCase().includes(s) ||
+      String(t.name_en || "").toLowerCase().includes(s)
+    );
+  }, [tests.data, testSearch]);
+
   async function signOut() {
     await supabase.auth.signOut();
     navigate({ to: "/auth" });
@@ -114,19 +125,38 @@ async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
           r[key.trim().toLowerCase()] = row[key];
         });
 
+        const code = r.code ? String(r.code).trim().toUpperCase() : "";
+        const nameAr = r.name_ar ? String(r.name_ar).trim() : "";
+        const nameEn = r.name_en ? String(r.name_en).trim() : null;
+        const category = r.category ? String(r.category).trim() : null;
+        const descriptionAr = r.description_ar ? String(r.description_ar).trim() : null;
+        const minAge = isNaN(Number(r.min_age)) ? 0 : Number(r.min_age);
+        const maxAge = isNaN(Number(r.max_age)) ? 120 : Number(r.max_age);
+        const gender = (["male", "female", "both"].includes(String(r.gender).trim().toLowerCase()) ? String(r.gender).trim().toLowerCase() : "both") as "male" | "female" | "both";
+
         return {
-          code: r.code ? String(r.code).trim().toUpperCase() : null,
-          name_ar: r.name_ar ? String(r.name_ar).trim() : null,
-          name_en: r.name_en ? String(r.name_en).trim() : null,
-          category: r.category ? String(r.category).trim() : null,
-          description_ar: r.description_ar ? String(r.description_ar).trim() : null,
-          min_age: isNaN(Number(r.min_age)) ? 0 : Number(r.min_age),
-          max_age: isNaN(Number(r.max_age)) ? 120 : Number(r.max_age),
-          gender: (["male", "female", "both"].includes(String(r.gender).trim().toLowerCase()) ? String(r.gender).trim().toLowerCase() : "both") as "male" | "female" | "both",
+          code,
+          name_ar: nameAr,
+          name_en: nameEn,
+          category,
+          description_ar: descriptionAr,
+          min_age: minAge,
+          max_age: maxAge,
+          gender,
           active: r.active === "false" || r.active === false ? false : true,
         };
       })
-      .filter((r) => r.code && r.name_ar);
+      .filter((r) => r.code && r.name_ar) as Array<{
+        code: string;
+        name_ar: string;
+        name_en: string | null;
+        category: string | null;
+        description_ar: string | null;
+        min_age: number;
+        max_age: number;
+        gender: "male" | "female" | "both";
+        active: boolean;
+      }>;
 
     if (cleaned.length === 0) {
       toast.error("الملف فارغ أو لا يحتوي على الأعمدة المطلوبة بشكل صحيح (code, name_ar)");

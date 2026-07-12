@@ -166,11 +166,27 @@ async function onDelete(id: string) {
   }
 }
 
-    const openEditModal = (test: any) => {
+const openEditModal = (test: any = null) => {
+  if (test) {
     setEditingTest(test);
-    setTestForm({ ...test, name_en: test.name_en || "", category: test.category || "", description_ar: test.description_ar || "" });
-    setIsModalOpen(true);
-  };
+    setTestForm({
+      code: test.code || "",
+      name_ar: test.name_ar || "",
+      name_en: test.name_en || "",
+      category: test.category || "",
+      description_ar: test.description_ar || "",
+      min_age: test.min_age ?? 0,
+      max_age: test.max_age ?? 120,
+      gender: test.gender || "both",
+      active: test.active ?? true
+    });
+  } else {
+    setEditingTest(null);
+    setTestForm({ code: "", name_ar: "", name_en: "", category: "", description_ar: "", min_age: 0, max_age: 120, gender: "both", active: true });
+  }
+  setIsModalOpen(true);
+};
+
 
   const handleSaveTest = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -333,41 +349,41 @@ async function onDelete(id: string) {
                   </tr>
                 </thead>
                 <tbody>
-                  {tests.isLoading && (
-                    <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">جاري تحميل قائمة الفحوصات...</td></tr>
-                  )}
-                  {!tests.isLoading && (!tests.data || tests.data.length === 0) && (
-                    <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">لا توجد فحوصات مدرجة</td></tr>
-                  )}
-                  {!tests.isLoading && tests.data && 
-                    tests.data
-                      .filter((t: any) => t.name_ar?.includes(testSearch) || t.code?.includes(testSearch))
-                      .map((t: any) => (
-                        <tr key={t.id} className="border-t border-border hover:bg-muted/30">
-                          <td className="p-3 font-mono text-xs font-bold">{t.code}</td>
-                          <td className="p-3">{t.name_ar}</td>
-                          <td className="p-3 text-xs">{t.category || "عام"}</td>
-                          <td className="p-3 text-xs">{t.min_age} - {t.max_age} سنة</td>
-                          <td className="p-3 text-xs">
-                            {t.gender === "both" ? "الكل" : t.gender === "male" ? "ذكر" : "أنثى"}
-                          </td>
-                          <td className="p-3">
-                            <span className={`px-1.5 py-0.5 rounded text-xs ${t.active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
-                              {t.active ? "✓ نشط" : "✗ معطل"}
-                            </span>
-                          </td>
-                          <td className="p-3 flex justify-center gap-2">
-                            <button onClick={() => openEditModal(t)} className="text-blue-600 p-1 hover:bg-blue-50 rounded transition">
-                              <Edit2 className="h-4 w-4" />
-                            </button>
-                            <button onClick={() => handleDeleteTest(t.id)} className="text-destructive p-1 hover:bg-destructive/5 rounded transition">
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                  }
-                </tbody>
+  {tests.isLoading && (
+    <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">جاري تحميل قائمة الفحوصات...</td></tr>
+  )}
+  {/* تم تغيير الشرط هنا ليعتمد على التصفية الذكية لمعرفة هل الجدول فارغ بعد البحث أم لا */}
+  {!tests.isLoading && filteredTests.length === 0 && (
+    <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">لا توجد فحوصات مطابقة للبحث أو مدرجة</td></tr>
+  )}
+  {/* تم استبدال الكود القديم بالاعتماد المباشر على المصفوفة الجاهزة المفلترة */}
+  {!tests.isLoading && filteredTests.map((t: any) => (
+    <tr key={t.id} className="border-t border-border hover:bg-muted/30">
+      <td className="p-3 font-mono text-xs font-bold">{t.code}</td>
+      <td className="p-3">{t.name_ar}</td>
+      <td className="p-3 text-xs">{t.category || "عام"}</td>
+      <td className="p-3 text-xs">{t.min_age} - {t.max_age} سنة</td>
+      <td className="p-3 text-xs">
+        {t.gender === "both" ? "الكل" : t.gender === "male" ? "ذكر" : "أنثى"}
+      </td>
+      <td className="p-3">
+        <span className={`px-1.5 py-0.5 rounded text-xs ${t.active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
+          {t.active ? "✓ نشط" : "✗ معطل"}
+        </span>
+      </td>
+      <td className="p-3 flex justify-center gap-2">
+        {/* الآن عند الضغط، سيقوم المودال بالفتح وتعبئة البيانات بشكل سليم */}
+        <button onClick={() => openEditModal(t)} className="text-blue-600 p-1 hover:bg-blue-50 rounded transition">
+          <Edit2 className="h-4 w-4" />
+        </button>
+        <button onClick={() => handleDeleteTest(t.id)} className="text-destructive p-1 hover:bg-destructive/5 rounded transition">
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </td>
+    </tr>
+  ))}
+</tbody>
+
               </table>
             </div>
           </div>
